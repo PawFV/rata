@@ -1,0 +1,107 @@
+# RATA - Custom Suricata rules for RAT/C2 detection
+# These rules complement the standard ET Open rules
+
+# ============================================================================
+# BEACONING DETECTION (Periodic communication with C2)
+# ============================================================================
+
+# Suspicious HTTP requests with empty or generic User-Agent
+alert http any any -> any any (msg:"RATA - HTTP without User-Agent"; flow:to_server,established; http.user_agent; content:!""; sid:9000001; rev:1;)
+alert http any any -> any any (msg:"RATA - Suspicious User-Agent Python"; flow:to_server,established; http.user_agent; content:"python"; nocase; sid:9000002; rev:1;)
+alert http any any -> any any (msg:"RATA - Suspicious User-Agent curl"; flow:to_server,established; http.user_agent; content:"curl"; nocase; sid:9000003; rev:1;)
+
+# ============================================================================
+# SUSPICIOUS PORTS
+# ============================================================================
+
+# Metasploit default ports
+alert tcp any any -> any 4444 (msg:"RATA - Connection to port 4444 (Metasploit default)"; flow:to_server,established; sid:9000010; rev:1;)
+alert tcp any any -> any 4445 (msg:"RATA - Connection to port 4445 (Metasploit)"; flow:to_server,established; sid:9000011; rev:1;)
+
+# Cobalt Strike defaults
+alert tcp any any -> any 50050 (msg:"RATA - Connection to port 50050 (Cobalt Strike)"; flow:to_server,established; sid:9000012; rev:1;)
+
+# Common backdoor ports
+alert tcp any any -> any 1337 (msg:"RATA - Connection to port 1337 (common backdoor)"; sid:9000013; rev:1;)
+alert tcp any any -> any 31337 (msg:"RATA - Connection to port 31337 (elite backdoor)"; sid:9000014; rev:1;)
+
+# Known RATs
+alert tcp any any -> any 5555 (msg:"RATA - Port 5555 (Android ADB / RAT)"; sid:9000015; rev:1;)
+alert tcp any any -> any 6666:6669 (msg:"RATA - IRC range (used by botnets)"; sid:9000016; rev:1;)
+
+# ============================================================================
+# DNS TUNNELING
+# ============================================================================
+
+# Very long DNS queries (possible tunneling)
+alert dns any any -> any any (msg:"RATA - Very long DNS query (possible tunneling)"; dns.query; content:"|00|"; offset:50; sid:9000020; rev:1;)
+
+# Suspicious TXT records (common in DNS tunneling)
+alert dns any any -> any any (msg:"RATA - DNS TXT query (possible tunneling)"; dns.query; content:"|00 10|"; sid:9000021; rev:1;)
+
+# ============================================================================
+# DATA EXFILTRATION
+# ============================================================================
+
+# Large POST requests
+alert http any any -> any any (msg:"RATA - Large HTTP POST (possible exfiltration)"; flow:to_server,established; http.method; content:"POST"; http.content_len; content:">1000000"; sid:9000030; rev:1;)
+
+# Connections to file/paste services
+alert http any any -> any any (msg:"RATA - Connection to pastebin"; flow:to_server,established; http.host; content:"pastebin"; nocase; sid:9000031; rev:1;)
+alert http any any -> any any (msg:"RATA - Connection to transfer.sh"; flow:to_server,established; http.host; content:"transfer.sh"; sid:9000032; rev:1;)
+alert http any any -> any any (msg:"RATA - Connection to file.io"; flow:to_server,established; http.host; content:"file.io"; sid:9000033; rev:1;)
+
+# ============================================================================
+# REVERSE SHELLS
+# ============================================================================
+
+# Reverse shell patterns in traffic
+alert tcp any any -> any any (msg:"RATA - Possible bash reverse shell"; flow:established; content:"/bin/bash"; content:"-i"; within:20; sid:9000040; rev:1;)
+alert tcp any any -> any any (msg:"RATA - Possible sh reverse shell"; flow:established; content:"/bin/sh"; content:"-i"; within:20; sid:9000041; rev:1;)
+alert tcp any any -> any any (msg:"RATA - Possible netcat shell"; flow:established; content:"nc "; content:"-e"; within:20; sid:9000042; rev:1;)
+alert tcp any any -> any any (msg:"RATA - Possible python reverse shell"; flow:established; content:"python"; content:"socket"; content:"subprocess"; sid:9000043; rev:1;)
+
+# ============================================================================
+# POST-EXPLOITATION TOOLS
+# ============================================================================
+
+# Mimikatz patterns
+alert tcp any any -> any any (msg:"RATA - Possible Mimikatz"; flow:established; content:"sekurlsa"; nocase; sid:9000050; rev:1;)
+
+# Empire/PowerShell Empire
+alert http any any -> any any (msg:"RATA - Possible PowerShell Empire"; flow:to_server,established; content:"powershell"; nocase; content:"-enc"; nocase; sid:9000051; rev:1;)
+
+# ============================================================================
+# CONNECTIONS TO SUSPICIOUS INFRASTRUCTURE
+# ============================================================================
+
+# Tor
+alert tcp any any -> any 9001 (msg:"RATA - Connection to Tor OR port"; sid:9000060; rev:1;)
+alert tcp any any -> any 9050 (msg:"RATA - Connection to Tor SOCKS port"; sid:9000061; rev:1;)
+
+# Suspicious VPNs on non-standard ports
+alert udp any any -> any 1194 (msg:"RATA - OpenVPN UDP"; sid:9000062; rev:1;)
+
+# ============================================================================
+# EVASION TECHNIQUES
+# ============================================================================
+
+# HTTP CONNECT tunneling
+alert http any any -> any any (msg:"RATA - HTTP CONNECT (possible tunneling)"; http.method; content:"CONNECT"; sid:9000070; rev:1;)
+
+# Base64 in HTTP headers (possible C2)
+alert http any any -> any any (msg:"RATA - Suspicious Base64 in HTTP header"; flow:to_server,established; http.header; pcre:"/[A-Za-z0-9+\/]{50,}={0,2}/"; sid:9000071; rev:1;)
+
+# ============================================================================
+# GEOGRAPHICALLY SUSPICIOUS ACTIVITY (example Argentina)
+# ============================================================================
+
+# Note: These IPs are examples. You should update with specific ranges.
+# alert ip any any -> [200.0.0.0/8] any (msg:"RATA - Connection to Argentina IP range"; sid:9000080; rev:1;)
+
+# ============================================================================
+# SUSPICIOUS SSL CERTIFICATES
+# ============================================================================
+
+alert tls any any -> any any (msg:"RATA - Self-signed or invalid SSL certificate"; flow:established; tls.cert_issuer; content:"CN="; pcre:"/CN=[^,]{1,10},/"; sid:9000090; rev:1;)
+

@@ -1,0 +1,8 @@
+# RATA IP Blocklist
+# Add known malicious IPs here (one per line)
+# Lines starting with # are comments
+
+# Example malicious IPs (replace with actual threat intel)
+# 1.2.3.4
+# 5.6.7.8
+

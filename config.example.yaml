@@ -1,0 +1,223 @@
+# RATA - Real-time Attack Tracking & Alerting
+# Main configuration file
+
+general:
+  log_level: INFO
+  log_file: logs/rata.log
+  pid_file: rata.pid
+  forensics_dir: forensics
+  
+monitoring:
+  network:
+    enabled: true
+    interface: auto
+    capture_packets: true
+    pcap_dir: pcap
+    pcap_rotation_hours: 24
+    pcap_max_size_mb: 500
+    
+  processes:
+    enabled: true
+    check_interval_seconds: 5
+    track_new_processes: true
+    track_network_per_process: true
+    
+  files:
+    enabled: true
+    watch_paths:
+      - /etc
+      - /usr/bin
+      - /usr/sbin
+      - /bin
+      - /sbin
+      - /lib
+      - /lib64
+    ignore_patterns:
+      - "*.log"
+      - "*.tmp"
+      - "/etc/mtab"
+      
+  kernel:
+    enabled: true
+    monitor_modules: true
+    monitor_syscalls: true
+    use_ebpf: true
+
+whitelist:
+  dns_servers:
+    # NordVPN DNS
+    - 103.86.96.100
+    - 103.86.99.100
+    # Fallback public DNS
+    - 1.1.1.1
+    - 1.0.0.1
+    - 8.8.8.8
+    - 8.8.4.4
+    - 9.9.9.9
+    
+  allowed_domains:
+    - "*.kali.org"
+    - "*.debian.org"
+    - "*.ubuntu.com"
+    - "github.com"
+    - "*.github.com"
+    - "*.githubusercontent.com"
+    - "pypi.org"
+    - "*.pypi.org"
+    - "*.python.org"
+    
+  allowed_ips:
+    # Kali repos
+    - 192.99.200.113
+    # Cursor IDE backend (AWS)
+    - 52.207.108.103
+    - 54.88.85.135
+    - 18.233.245.59
+    
+  allowed_ports:
+    outbound:
+      - 53    # DNS
+      - 67    # DHCP
+      - 68    # DHCP
+      - 80    # HTTP
+      - 443   # HTTPS
+      - 22    # SSH
+      - 8884  # Cursor IDE websocket
+    inbound: []
+    
+  allowed_processes:
+    network_access:
+      - firefox
+      - firefox-esr
+      - chromium
+      - apt
+      - apt-get
+      - curl
+      - wget
+      - ssh
+      - git
+      - pip
+      - pip3
+      - python3
+      - suricata
+      - cursor
+      - nordvpn
+      - nordvpnd
+      - NetworkManager
+      
+detection:
+  beaconing:
+    enabled: true
+    min_connections: 5
+    time_window_seconds: 300
+    regularity_threshold: 0.8
+    
+  dns_tunneling:
+    enabled: true
+    max_subdomain_length: 50
+    max_query_length: 100
+    entropy_threshold: 3.5
+    
+  data_exfiltration:
+    enabled: true
+    outbound_threshold_mb: 50
+    time_window_minutes: 60
+    
+  suspicious_ports:
+    enabled: true
+    ports:
+      - 4444   # Metasploit default
+      - 5555   # Android ADB
+      - 1337   # Common backdoor
+      - 31337  # Elite
+      - 6666   # IRC
+      - 6667   # IRC
+      - 8080   # Common proxy
+      - 9001   # Tor
+      - 9050   # Tor SOCKS
+      
+  suspicious_ips:
+    enabled: true
+    check_reputation: false
+    blocklists:
+      - rules/blocklist_ips.txt
+      
+alerts:
+  enabled: true
+  
+  sound:
+    enabled: true
+    critical: /usr/share/sounds/freedesktop/stereo/alarm-clock-elapsed.oga
+    warning: /usr/share/sounds/freedesktop/stereo/bell.oga
+    
+  desktop_notification:
+    enabled: true
+    
+  log_to_file:
+    enabled: true
+    file: alerts/alerts.log
+    
+  actions:
+    on_critical:
+      - capture_pcap
+      - capture_process_info
+      - notify
+    on_warning:
+      - log
+      - notify
+      
+  blocking:
+    enabled: true
+    auto_block_on_critical: true
+    block_duration_minutes: 60
+    kill_switch:
+      enabled: true
+      on_threat_level: CRITICAL
+      capture_before_kill: true
+      capture_duration_seconds: 10
+    
+forensics:
+  auto_capture:
+    enabled: true
+    on_alert_level: warning
+    
+  pcap:
+    enabled: true
+    buffer_seconds: 60
+    
+  process_dump:
+    enabled: true
+    
+  memory_dump:
+    enabled: false
+    
+integrity:
+  self_check:
+    enabled: true
+    interval_seconds: 300
+    
+  binary_hashes:
+    enabled: true
+    hash_file: baseline/binary_hashes.sha256
+    
+  config_backup:
+    enabled: true
+    backup_dir: baseline/configs
+
+canaries:
+  enabled: true
+  files:
+    - name: fake_wallet
+      path: Documents/.wallet_backup.txt
+      content: "wallet_seed: abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
+      trigger_key: canary_crypto
+      
+    - name: fake_aws
+      path: .aws/credentials_backup
+      content: "[default]\naws_access_key_id = AKIAIOSFODNN7EXAMPLE\naws_secret_access_key = wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+      trigger_key: canary_cloud
+      
+    - name: fake_passwords
+      path: Documents/passwords_old.txt
+      content: "gmail: hunter2\nfacebook: 123456"
+      trigger_key: canary_creds

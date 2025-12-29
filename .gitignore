@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+
+# RATA Runtime Data
+logs/
+pcap/
+forensics/
+alerts/
+rata.pid
+
+# Configuration & Sensitivity
+config.yaml
+!config.example.yaml
+baseline/canaries.json
+!baseline/canaries.example.json
+baseline/binary_hashes.sha256
+baseline/self_hashes.json
+baseline/configs/
+baseline/ip_cache.json
+baseline/hashes/
+baseline/system_state_*.txt
+
+# IDE
+.vscode/
+.idea/
+.cursor/
+
+# System specifics
+*.log
+*.pcap
+*.tmp
