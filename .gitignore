@@ -35,3 +35,4 @@ baseline/system_state_*.txt
 *.tmp
 *.send_wifei_packets
 *.cool
+*.secret_keyword
