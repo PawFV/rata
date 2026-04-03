@@ -33,5 +33,5 @@ baseline/system_state_*.txt
 *.log
 *.pcap
 *.tmp
-* send_wifei_packets
-* cool
+*.send_wifei_packets
+*.cool
